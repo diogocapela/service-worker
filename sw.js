@@ -40,23 +40,27 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
 
-    console.log(`SW FETCH EVENT: ${event.request.url}`);
+
+    console.log(`WORKER: Fetch ${event.request.url}`);
 
     if(event.request.method !== 'GET') {
         return;
     }
 
+    // If any request for a PNG image change the response for a different one
     /*
-    // if any request for a PNG image change the response for this one
     if(event.request.url.endsWith('.png')) {
-        event.respondWith(fetch('/css/img/face.png'));
+        event.respondWith(fetch('/css/img/different.png'));
     }
     */
 
     // Offline approach 1: assume everything is cached (BAD)
-    //event.respondWith(caches.match(event.request));
+    /*
+    event.respondWith(caches.match(event.request));
+    */
 
     // Offline approach 2: try to make a request to the network and if it fails serve from the cache
+
     event.respondWith(
         fetch(event.request)
             .then((networkResponse) => {
@@ -67,6 +71,30 @@ self.addEventListener('fetch', (event) => {
                 return caches.match(event.request);
             })
     );
+
+
+    // Offline approach 3: Use the network if it's fast, otherwise use the cache
+    /*
+    event.respondWith(
+        fetch(event.request)
+            .then((networkResponse) => {
+                console.log(`WORKER: Updating cached data for ${event.request.url}...`);
+                let responseClone = networkResponse.clone();
+                caches.open('mycache').then((cache) => {
+                    // responseClone ????
+                    cache.put(event.request, networkResponse);
+                });
+                return networkResponse;
+            })
+            // If the network fails or is it too slow
+            .timeout(200)
+            .catch((_) => {
+                console.log(`WORKER: Serving ${event.request.url} from CACHE`);
+                return caches.match(event.request);
+            })
+    );
+    */
+
 
 
 });
